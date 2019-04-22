@@ -247,12 +247,6 @@ def learn(env,
     episode_rewards = [0.0]
     saved_mean_reward = None
     obs = env.reset()
-    
-    # Start of our code
-    obs_small = downsample_image(obs[0], 84, down_only= True)
-    state = np.stack([obs_small]*4, axis=2)
-    # End of our code
-
     reset = True
 
     with tempfile.TemporaryDirectory() as td:
@@ -295,22 +289,12 @@ def learn(env,
             new_obs, rew, done, _ = env.step(env_action)
             
             # Store transition in the replay buffer.
-            # Start of our code
-            irl_reward, action_present = r.get_reward(state, action)
-            if action_present:
-                replay_buffer.add(obs, action, irl_reward, new_obs, float(done))
-            else:
-                replay_buffer.add(obs, action, rew, new_obs, float(done))
-            obs_small = downsample_image(new_obs[0], 84, down_only= True)
-            state = update_state(state, obs_small)
-            # End of our code
+            replay_buffer.add(obs, action, rew, new_obs, float(done))
             
             obs = new_obs
             episode_rewards[-1] += rew
             if done:
                 obs = env.reset()
-                obs_small = downsample_image(obs[0], 84, down_only= True)
-                state = np.stack([obs_small]*4, axis=2)
                 episode_rewards.append(0.0)
                 reset = True
 
