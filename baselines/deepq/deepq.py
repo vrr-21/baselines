@@ -109,8 +109,8 @@ def learn(env,
           exploration_final_eps=0.02,
           train_freq=1,
           batch_size=32,
-          print_freq=10,
-          checkpoint_freq=100,
+          print_freq=100,
+          checkpoint_freq=1000,
           checkpoint_path=None,
           learning_starts=1000,
           gamma=1.0,
@@ -196,7 +196,13 @@ def learn(env,
 
     sess = get_session()
     set_global_seeds(seed)
-
+    # Start of logger code.
+    f_ep = open("dqn-progress.csv", "w+")
+    f_100ep = open("dqn_100ep-progress.csv", "w+")
+    f_ep.write("Episode, Episode reward\n")
+    f_100ep.write("Episodes done, Mean 100 episode reward\n")
+    ep_no = 0
+    # End of logger code.
     q_func = build_q_func(network, **network_kwargs)
     r = RewardCombine()
     # capture the shape outside the closure so that the env object is not serialized
@@ -311,6 +317,9 @@ def learn(env,
                 obs = env.reset()
                 obs_small = downsample_image(obs[0], 84, down_only= True)
                 state = np.stack([obs_small]*4, axis=2)
+                # Start of logger code
+                f_ep.write(str(ep_no)+","+str(episode_rewards[-1])+"\n")
+                # End of logger code
                 episode_rewards.append(0.0)
                 reset = True
 
@@ -338,6 +347,9 @@ def learn(env,
                 logger.record_tabular("episodes", num_episodes)
                 logger.record_tabular("mean 100 episode reward", mean_100ep_reward)
                 logger.record_tabular("% time spent exploring", int(100 * exploration.value(t)))
+                # Start of logger code
+                f_100ep.write(num_episodes+","+str(mean_100ep_reward)+"\n")
+                # End of logger code
                 logger.dump_tabular()
 
             if (checkpoint_freq is not None and t > learning_starts and
@@ -353,5 +365,6 @@ def learn(env,
             if print_freq is not None:
                 logger.log("Restored model with mean reward: {}".format(saved_mean_reward))
             load_variables(model_file)
-
+    f_ep.close()
+    f_100ep.close()
     return act
