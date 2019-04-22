@@ -19,6 +19,13 @@ from baselines.deepq.utils import ObservationInput
 from baselines.common.tf_util import get_session
 from baselines.deepq.models import build_q_func
 
+import sys
+sys.path.append('/home/vrr-21/CS599/project/STRAP/inverse_rl/')
+sys.path.append('/home/vrr-21/CS599/project/STRAP/rllab/')
+sys.path.append('/home/vrr-21/CS599/project/STRAP/tensorpack_models/')
+sys.path.append("/home/vrr-21/CS599/project/STRAP/")
+from fetch_reward import RewardCombine
+from doom_final import downsample_image, update_state
 
 class ActWrapper(object):
     def __init__(self, act, act_params):
@@ -102,8 +109,8 @@ def learn(env,
           exploration_final_eps=0.02,
           train_freq=1,
           batch_size=32,
-          print_freq=100,
-          checkpoint_freq=10000,
+          print_freq=10,
+          checkpoint_freq=100,
           checkpoint_path=None,
           learning_starts=1000,
           gamma=1.0,
@@ -191,7 +198,7 @@ def learn(env,
     set_global_seeds(seed)
 
     q_func = build_q_func(network, **network_kwargs)
-
+    r = RewardCombine()
     # capture the shape outside the closure so that the env object is not serialized
     # by cloudpickle when serializing make_obs_ph
 
@@ -240,6 +247,12 @@ def learn(env,
     episode_rewards = [0.0]
     saved_mean_reward = None
     obs = env.reset()
+    
+    # Start of our code
+    obs_small = downsample_image(obs[0], 84, down_only= True)
+    state = np.stack([obs_small]*4, axis=2)
+    # End of our code
+
     reset = True
 
     with tempfile.TemporaryDirectory() as td:
@@ -280,13 +293,24 @@ def learn(env,
             env_action = action
             reset = False
             new_obs, rew, done, _ = env.step(env_action)
+            
             # Store transition in the replay buffer.
-            replay_buffer.add(obs, action, rew, new_obs, float(done))
+            # Start of our code
+            irl_reward, action_present = r.get_reward(state, action)
+            if action_present:
+                replay_buffer.add(obs, action, irl_reward, new_obs, float(done))
+            else:
+                replay_buffer.add(obs, action, rew, new_obs, float(done))
+            obs_small = downsample_image(new_obs[0], 84, down_only= True)
+            state = update_state(state, obs_small)
+            # End of our code
+            
             obs = new_obs
-
             episode_rewards[-1] += rew
             if done:
                 obs = env.reset()
+                obs_small = downsample_image(obs[0], 84, down_only= True)
+                state = np.stack([obs_small]*4, axis=2)
                 episode_rewards.append(0.0)
                 reset = True
 
