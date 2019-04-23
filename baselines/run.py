@@ -13,6 +13,7 @@ from baselines.common.vec_env.vec_video_recorder import VecVideoRecorder
 from baselines.common.cmd_util import common_arg_parser, parse_unknown_args, make_vec_env, make_env
 from baselines.common.tf_util import get_session
 from baselines import logger
+from baselines.video_record import store_video
 from importlib import import_module
 
 try:
@@ -217,26 +218,38 @@ def main(args):
     if args.play:
         logger.log("Running trained model")
         obs = env.reset()
-
+        ep_no = 0
+        NUM_EPISODES = 20
+        THRESHOLD_SCORE = 600
         state = model.initial_state if hasattr(model, 'initial_state') else None
         dones = np.zeros((1,))
 
         episode_rew = 0
-        while True:
-            if state is not None:
-                actions, _, state, _ = model.step(obs,S=state, M=dones)
-            else:
-                actions, _, _, _ = model.step(obs)
-
-            obs, rew, done, _ = env.step(actions)
-            episode_rew += rew[0] if isinstance(env, VecEnv) else rew
-            env.render()
-            done = done.any() if isinstance(done, np.ndarray) else done
-            if done:
-                print('episode_rew={}'.format(episode_rew))
-                episode_rew = 0
-                obs = env.reset()
-
+        while ep_no < NUM_EPISODES:
+            frame_list = []
+            while True:
+                if state is not None:
+                    actions, _, state, _ = model.step(obs,S=state, M=dones)
+                else:
+                    actions, _, _, _ = model.step(obs)
+                frame_list.append(obs[0])
+                obs, rew, done, _ = env.step(actions)
+                episode_rew += rew[0] if isinstance(env, VecEnv) else rew
+                env.render()
+                done = done.any() if isinstance(done, np.ndarray) else done
+                if done:
+                    print('episode_rew={}'.format(episode_rew))
+                    if episode_rew >= THRESHOLD_SCORE:
+                        frame_list.append(obs[0])
+                    else:
+                        frame_list.clear()
+                    episode_rew = 0
+                    obs = env.reset()
+                    break
+            if len(frame_list) > 0:
+                store_video(frame_list, "episode-"+str(ep_no)+".avi")
+                print("Video saved")
+                ep_no += 1
     env.close()
 
     return model

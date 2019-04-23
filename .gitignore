@@ -36,3 +36,8 @@ src
 MUJOCO_LOG.TXT
 
 models_progress/
+videos/
+models/
+
+*.ini
+*.tar.gz
