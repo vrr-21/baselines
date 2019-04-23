@@ -20,10 +20,10 @@ from baselines.common.tf_util import get_session
 from baselines.deepq.models import build_q_func
 
 import sys
-sys.path.append('/home/vrr-21/CS599/project/STRAP/inverse_rl/')
-sys.path.append('/home/vrr-21/CS599/project/STRAP/rllab/')
-sys.path.append('/home/vrr-21/CS599/project/STRAP/tensorpack_models/')
-sys.path.append("/home/vrr-21/CS599/project/STRAP/")
+sys.path.append('../STRAP/inverse_rl/')
+sys.path.append('../STRAP/rllab/')
+sys.path.append('../STRAP/tensorpack_models/')
+sys.path.append("../STRAP/")
 from fetch_reward import RewardCombine
 from doom_final import downsample_image, update_state
 
@@ -319,6 +319,7 @@ def learn(env,
                 state = np.stack([obs_small]*4, axis=2)
                 # Start of logger code
                 f_ep.write(str(ep_no)+","+str(episode_rewards[-1])+"\n")
+                ep_no += 1
                 # End of logger code
                 episode_rewards.append(0.0)
                 reset = True
