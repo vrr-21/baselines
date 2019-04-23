@@ -109,7 +109,7 @@ def learn(env,
           exploration_final_eps=0.02,
           train_freq=1,
           batch_size=32,
-          print_freq=100,
+          print_freq=10,
           checkpoint_freq=1000,
           checkpoint_path=None,
           learning_starts=1000,
@@ -349,7 +349,7 @@ def learn(env,
                 logger.record_tabular("mean 100 episode reward", mean_100ep_reward)
                 logger.record_tabular("% time spent exploring", int(100 * exploration.value(t)))
                 # Start of logger code
-                f_100ep.write(num_episodes+","+str(mean_100ep_reward)+"\n")
+                f_100ep.write(str(num_episodes)+","+str(mean_100ep_reward)+"\n")
                 # End of logger code
                 logger.dump_tabular()
 
